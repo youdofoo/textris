@@ -265,7 +265,7 @@ func NewGame(b *Board, minoFigures []*MinoFigure) *Game {
 	}
 }
 
-func (g *Game) SpawnMino() {
+func (g *Game) spawnMino() {
 	idx := rand.Intn(len(g.minoFigures))
 	g.currentMino = &Mino{
 		figure: g.minoFigures[idx],
@@ -275,29 +275,7 @@ func (g *Game) SpawnMino() {
 	}
 }
 
-func (g *Game) FallMino() bool {
-	if g.currentMino.CanMove(g.board, 0, 1) {
-		g.currentMino.Move(0, 1)
-		return true
-	} else {
-		return false
-	}
-}
-
-func (g *Game) OnMinoLanded() {
-	g.board.Fix(g.currentMino)
-	g.board.EraseLines(g.currentMino)
-}
-
-func (g *Game) FixMino() {
-	g.board.Fix(g.currentMino)
-}
-
-func (g *Game) Draw() {
-	g.board.Draw(g.currentMino)
-}
-
-func (g *Game) HandleKey(k Key) {
+func (g *Game) handleKey(k Key) {
 	switch k {
 	case KeyUp:
 		// TODO: ハードドロップ
@@ -322,6 +300,44 @@ func (g *Game) HandleKey(k Key) {
 			g.currentMino.RotateR()
 		}
 	}
+}
+
+func (g *Game) Run() error {
+	clearDisplay()
+
+	keyInput := make(chan Key)
+	go func() {
+		err := CaptureKeyInput(keyInput)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+	drawTicker := time.NewTicker(1000 / 60 * time.Millisecond)
+	fallTicker := time.NewTicker(500 * time.Millisecond)
+
+	g.spawnMino()
+loop:
+	for {
+		select {
+		case key := <-keyInput:
+			if key == KeyEsc {
+				break loop
+			}
+			g.handleKey(key)
+		case <-fallTicker.C:
+			if g.currentMino.CanMove(g.board, 0, 1) {
+				g.currentMino.Move(0, 1)
+			} else {
+				g.board.Fix(g.currentMino)
+				g.board.EraseLines(g.currentMino)
+				g.spawnMino()
+			}
+		case <-drawTicker.C:
+			g.board.Draw(g.currentMino)
+		default:
+		}
+	}
+	return nil
 }
 
 func makeMinoFigures() []*MinoFigure {
@@ -406,38 +422,11 @@ func makeMinoFigures() []*MinoFigure {
 }
 
 func main() {
-	clearDisplay()
-	keyInput := make(chan Key)
-	go func() {
-		err := CaptureKeyInput(keyInput)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-	drawTicker := time.NewTicker(1000 / 60 * time.Millisecond)
-	fallTicker := time.NewTicker(500 * time.Millisecond)
-
 	board := NewBoard(2, 2, 20, 10)
 	minoFigures := makeMinoFigures()
 	g := NewGame(board, minoFigures)
-	g.SpawnMino()
 
-loop:
-	for {
-		select {
-		case key := <-keyInput:
-			if key == KeyEsc {
-				break loop
-			}
-			g.HandleKey(key)
-		case <-fallTicker.C:
-			if !g.FallMino() {
-				g.OnMinoLanded()
-				g.SpawnMino()
-			}
-		case <-drawTicker.C:
-			g.Draw()
-		default:
-		}
+	if err := g.Run(); err != nil {
+		log.Fatal(err)
 	}
 }
