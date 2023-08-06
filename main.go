@@ -12,7 +12,7 @@ import (
 type Color uint8
 
 const (
-	Black Color = iota
+	Black Color = iota + 1
 	Red
 	Green
 	Yellow
@@ -23,7 +23,7 @@ const (
 )
 
 func ansiColored(s string, c Color) string {
-	return fmt.Sprintf("\033[%dm%s\033[m", 40+c, s)
+	return fmt.Sprintf("\033[%dm%s\033[m", 39+c, s)
 }
 
 type Board struct {
@@ -129,7 +129,7 @@ func (b *Board) Draw(m *Mino) {
 	for i := 0; i < b.h; i++ {
 		for j := 0; j < b.w; j++ {
 			v := b.At(j, i)
-			if i >= m.y && i < m.y+m.Size() && j >= m.x && j < m.x+m.Size() && m.BlockAt(j-m.x, i-m.y) == 1 {
+			if m != nil && i >= m.y && i < m.y+m.Size() && j >= m.x && j < m.x+m.Size() && m.BlockAt(j-m.x, i-m.y) == 1 {
 				v = int(m.Color())
 			}
 			if v == 0 {
@@ -302,6 +302,19 @@ func (g *Game) handleKey(k Key) {
 	}
 }
 
+func (g *Game) gameOver() {
+	for i := 0; i < g.board.h; i++ {
+		for j := 0; j < g.board.w; j++ {
+			if g.board.At(j, i) != 0 {
+				g.board.Set(j, i, int(Black))
+			}
+		}
+	}
+	g.board.Draw(nil)
+
+	fmt.Printf("\033[1;1H\033[%dB\033[%dCGAME OVER!\033[1;1H\033[%dB", g.board.y+g.board.h/2, g.board.x+(g.board.w*2)/2-5, g.board.y+g.board.h)
+}
+
 func (g *Game) Run() error {
 	clearDisplay()
 
@@ -321,6 +334,7 @@ loop:
 		select {
 		case key := <-keyInput:
 			if key == KeyEsc {
+				g.gameOver()
 				break loop
 			}
 			g.handleKey(key)
@@ -331,6 +345,10 @@ loop:
 				g.board.Fix(g.currentMino)
 				g.board.EraseLines(g.currentMino)
 				g.spawnMino()
+				if g.board.HasCollision(g.currentMino) {
+					g.gameOver()
+					break loop
+				}
 			}
 		case <-drawTicker.C:
 			g.board.Draw(g.currentMino)
