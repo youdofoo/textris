@@ -9,14 +9,6 @@ import (
 	"time"
 )
 
-const (
-	BoardWidth       = 10
-	BoardHeight      = 20
-	BoardMargin      = 2
-	BoardArrayHeight = BoardHeight + 2*BoardMargin
-	BoardArrayWidth  = BoardWidth + 2*BoardMargin
-)
-
 type Color uint8
 
 const (
@@ -37,26 +29,13 @@ func ansiColored(s string, c Color) string {
 type Board struct {
 	x, y   int
 	h, w   int
-	margin int
 	values [][]int
 }
 
-func NewBoard(x, y, h, w, margin int) *Board {
-	values := make([][]int, h+2*margin)
+func NewBoard(x, y, h, w int) *Board {
+	values := make([][]int, h)
 	for i := range values {
-		values[i] = make([]int, w+2*margin)
-	}
-	for i := 0; i < h+2*margin; i++ {
-		for m := 0; m < margin; m++ {
-			values[i][m] = -1
-			values[i][w+m] = -1
-		}
-	}
-	for j := 0; j < w+2*margin; j++ {
-		for m := 0; m < margin; m++ {
-			values[m][j] = -1
-			values[h+m][j] = -1
-		}
+		values[i] = make([]int, w)
 	}
 
 	return &Board{
@@ -64,7 +43,6 @@ func NewBoard(x, y, h, w, margin int) *Board {
 		y:      y,
 		h:      h,
 		w:      w,
-		margin: margin,
 		values: values,
 	}
 }
@@ -73,14 +51,14 @@ func (b *Board) At(x, y int) int {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return -1
 	}
-	return b.values[y+b.margin][x+b.margin]
+	return b.values[y][x]
 }
 
 func (b *Board) Set(x, y, v int) {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return
 	}
-	b.values[y+b.margin][x+b.margin] = v
+	b.values[y][x] = v
 }
 
 func (b *Board) Height() int {
@@ -439,7 +417,7 @@ func main() {
 	drawTicker := time.NewTicker(1000 / 60 * time.Millisecond)
 	fallTicker := time.NewTicker(500 * time.Millisecond)
 
-	board := NewBoard(2, 2, 20, 10, 0)
+	board := NewBoard(2, 2, 20, 10)
 	minoFigures := makeMinoFigures()
 	g := NewGame(board, minoFigures)
 	g.SpawnMino()
