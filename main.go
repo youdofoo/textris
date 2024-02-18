@@ -26,6 +26,21 @@ func clearDisplay() {
 	fmt.Print("\033[2J")
 }
 
+type Logger struct {
+	logLines int64
+}
+
+func NewLogger() *Logger {
+	return &Logger{
+		logLines: 0,
+	}
+}
+
+func (l *Logger) Log(s string) {
+	fmt.Printf("\033[%d;1H%s", boardY+boardHeight+3+l.logLines, s)
+	l.logLines++
+}
+
 const (
 	boardX      = 2
 	boardY      = 2
