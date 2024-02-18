@@ -105,6 +105,7 @@ loop:
 				g.board.EraseLines(g.currentMino)
 				g.spawnMino()
 				if g.board.HasCollision(g.currentMino) {
+					g.board.Fix(g.currentMino)
 					g.gameOver()
 					break loop
 				}
