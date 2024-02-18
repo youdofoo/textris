@@ -4,27 +4,44 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 )
+
+const nextMinoCount = 3
 
 type Game struct {
 	board       *Board
 	minoFigures []*MinoFigure
 	currentMino *Mino
 	score       int64
+
+	nextMinos   []*Mino
+	nextMinoIdx int
 }
 
 func NewGame(b *Board, minoFigures []*MinoFigure) *Game {
-	return &Game{
+	g := &Game{
 		board:       b,
 		minoFigures: minoFigures,
 	}
+	g.nextMinos = make([]*Mino, nextMinoCount)
+	for i := range g.nextMinos {
+		g.nextMinos[i] = g.randomMino()
+	}
+	return g
 }
 
 func (g *Game) spawnMino() {
-	idx := rand.Intn(len(g.minoFigures))
-	g.currentMino = &Mino{
-		figure: g.minoFigures[idx],
+	g.currentMino = g.nextMinos[g.nextMinoIdx]
+	g.nextMinos[g.nextMinoIdx] = g.randomMino()
+	g.nextMinoIdx = (g.nextMinoIdx + 1) % len(g.nextMinos)
+	g.drawNextMinos()
+}
+
+func (g *Game) randomMino() *Mino {
+	return &Mino{
+		figure: g.minoFigures[rand.Intn(len(g.minoFigures))],
 		rot:    0,
 		x:      (g.board.Width() - 1) / 2,
 		y:      0,
@@ -137,10 +154,41 @@ func score(eraced int) int64 {
 }
 
 const (
-	scoreOffsetX = 6
-	scoreY       = 5
+	scoreOffsetX     = 6
+	scoreY           = 5
+	nextMinosOffsetX = 7
+	nextMinosY       = 7
 )
 
 func (g *Game) drawScore() {
 	fmt.Printf("\033[%d;%dHScore: %d", scoreY, boardX+boardWidth*2+scoreOffsetX, g.score)
+}
+
+func (g *Game) drawNextMinos() {
+	fmt.Printf("\033[%d;%dH====NEXT====", nextMinosY, boardX+boardWidth*2+nextMinosOffsetX)
+	for i := 0; i < len(g.nextMinos); i++ {
+		idx := (g.nextMinoIdx + i) % len(g.nextMinos)
+		g.drawNextMino(g.nextMinos[idx], i)
+	}
+}
+
+func (g *Game) drawNextMino(mino *Mino, position int) {
+	buf := make([]string, max(mino.Size(), 4))
+	for i := 0; i < mino.Size(); i++ {
+		for j := 0; j < max(mino.Size(), 4); j++ {
+			var v int
+			if j < mino.Size() {
+				v = mino.BlockAt(j, i)
+			} else {
+				v = 0
+			}
+
+			if v == 0 {
+				buf[j] = ansiColored("　", Black)
+			} else {
+				buf[j] = ansiColored("　", mino.Color())
+			}
+		}
+		fmt.Printf("\033[%d;%dH%s", i+nextMinosY+2+position*4, boardX+boardWidth*2+nextMinosOffsetX, strings.Join(buf, ""))
+	}
 }
