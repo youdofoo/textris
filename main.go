@@ -26,8 +26,15 @@ func clearDisplay() {
 	fmt.Print("\033[2J")
 }
 
+const (
+	boardX      = 2
+	boardY      = 2
+	boardWidth  = 10
+	boardHeight = 20
+)
+
 func main() {
-	board := NewBoard(2, 2, 20, 10)
+	board := NewBoard(boardX, boardY, boardWidth, boardHeight)
 	minoFigures := makeMinoFigures()
 	g := NewGame(board, minoFigures)
 

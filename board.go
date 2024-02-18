@@ -7,11 +7,11 @@ import (
 
 type Board struct {
 	x, y   int
-	h, w   int
+	w, h   int
 	values [][]int
 }
 
-func NewBoard(x, y, h, w int) *Board {
+func NewBoard(x, y, w, h int) *Board {
 	values := make([][]int, h)
 	for i := range values {
 		values[i] = make([]int, w)
@@ -20,8 +20,8 @@ func NewBoard(x, y, h, w int) *Board {
 	return &Board{
 		x:      x,
 		y:      y,
-		h:      h,
 		w:      w,
+		h:      h,
 		values: values,
 	}
 }
