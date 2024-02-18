@@ -69,11 +69,14 @@ func (b *Board) Fix(m *Mino) {
 	}
 }
 
-func (b *Board) EraseLines(landedMino *Mino) {
+func (b *Board) EraseLines(landedMino *Mino) int {
 	isEraced := make(map[int]bool, b.h)
 	eracedCnt := 0
 	for i := 0; i < landedMino.Size(); i++ {
 		y := landedMino.y + i
+		if y >= b.h {
+			continue
+		}
 		filled := true
 		for j := 0; j < b.w; j++ {
 			filled = filled && b.At(j, y) != 0
@@ -84,7 +87,7 @@ func (b *Board) EraseLines(landedMino *Mino) {
 		}
 	}
 	if eracedCnt == 0 {
-		return
+		return 0
 	}
 
 	newValues := make([][]int, b.h)
@@ -100,6 +103,7 @@ func (b *Board) EraseLines(landedMino *Mino) {
 		idx--
 	}
 	b.values = newValues
+	return eracedCnt
 }
 
 func (b *Board) Draw(m *Mino) {

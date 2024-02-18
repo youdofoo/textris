@@ -11,6 +11,7 @@ type Game struct {
 	board       *Board
 	minoFigures []*MinoFigure
 	currentMino *Mino
+	score       int64
 }
 
 func NewGame(b *Board, minoFigures []*MinoFigure) *Game {
@@ -76,6 +77,7 @@ func (g *Game) gameOver() {
 
 func (g *Game) Run() error {
 	clearDisplay()
+	g.drawScore()
 
 	keyInput := make(chan Key)
 	go func() {
@@ -102,7 +104,9 @@ loop:
 				g.currentMino.Move(0, 1)
 			} else {
 				g.board.Fix(g.currentMino)
-				g.board.EraseLines(g.currentMino)
+				eraced := g.board.EraseLines(g.currentMino)
+				g.score += score(eraced)
+				g.drawScore()
 				g.spawnMino()
 				if g.board.HasCollision(g.currentMino) {
 					g.board.Fix(g.currentMino)
@@ -115,4 +119,28 @@ loop:
 		}
 	}
 	return nil
+}
+
+func score(eraced int) int64 {
+	switch eraced {
+	case 1:
+		return 100
+	case 2:
+		return 300
+	case 3:
+		return 500
+	case 4:
+		return 800
+	default:
+		return 0
+	}
+}
+
+const (
+	scoreOffsetX = 6
+	scoreY       = 5
+)
+
+func (g *Game) drawScore() {
+	fmt.Printf("\033[%d;%dHScore: %d", scoreY, boardX+boardWidth*2+scoreOffsetX, g.score)
 }
